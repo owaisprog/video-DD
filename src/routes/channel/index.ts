@@ -1,1 +1,1 @@
-export { Channel as Component } from "./Channel";
+export { Channel as Component } from "./channel";
