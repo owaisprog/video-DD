@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { getAllVideos } from "../../lib/api/video";
 import { extractMessageFromHtml } from "../../utils/extractMessageFromHtml";
@@ -114,7 +114,7 @@ const SkeletonGrid = ({ count = 6 }: { count?: number }) => (
 export const Home = () => {
   const [items, setItems] = useState<ApiVideo[]>([]);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  // const [totalPages, setTotalPages] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(true);
 
   const [loadingFirst, setLoadingFirst] = useState(true);
@@ -150,7 +150,7 @@ export const Home = () => {
       const docs = Array.isArray(data?.docs) ? data.docs : [];
 
       setPage(Number(data?.page ?? targetPage));
-      setTotalPages(Number(data?.totalPages ?? 1));
+      // setTotalPages(Number(data?.totalPages ?? 1));
       setHasNextPage(Boolean(data?.hasNextPage));
 
       setItems((prev) => {

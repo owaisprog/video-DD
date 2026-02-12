@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, type To } from "react-router-dom";
 import toast from "react-hot-toast";
 import { getSubscribedChannels } from "../../../lib/api/subscription";
 import { useAuth } from "../../../context/auth-context";
-import { Image, Text } from "lucide-react";
+import { Text } from "lucide-react";
 
 /* ---------------- Types ---------------- */
 
@@ -351,22 +351,6 @@ function HomeIcon({ className }: { className?: string }) {
   );
 }
 
-function ShortsIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
-      <path
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M14.5 4.5c-1.9 0-3.4 1.5-3.4 3.4 0 .6.2 1.2.5 1.7l-5.2 3c-1.1.6-1.7 1.8-1.7 3.1 0 2 1.6 3.6 3.6 3.6h6.2c2.7 0 4.9-2.2 4.9-4.9V9.4c0-2.7-2.2-4.9-4.9-4.9Z"
-      />
-      <path fill="currentColor" d="M11 10.2 16.2 13 11 15.8z" />
-    </svg>
-  );
-}
-
 function ChevronRightIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
@@ -428,25 +412,4 @@ function PlaylistsIcon({ className }: { className?: string }) {
   );
 }
 
-function WatchLaterIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
-      <circle
-        cx="12"
-        cy="12"
-        r="9"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-      <path
-        d="M12 7v5l3 2"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+ 

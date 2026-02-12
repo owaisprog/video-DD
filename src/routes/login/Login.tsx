@@ -11,23 +11,6 @@ type FormValues = {
   rememberMe?: boolean;
 };
 
-// ✅ Backend always returns HTML for errors, so only parse HTML
-const extractMessageFromHtml = (html: string) => {
-  // <pre>Error: Invalid user credentials.<br> ...</pre>
-  const match = html.match(/Error:\s*([^<\n\r]+?)(?:<br|<\/pre|$)/i);
-  if (match?.[1]) return match[1].trim();
-
-  // fallback: strip tags and try again
-  const text = html
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  const match2 = text.match(/Error:\s*(.+?)(?:\s+at\s+|$)/i);
-  if (match2?.[1]) return match2[1].trim();
-
-  return "Something went wrong. Please try again.";
-};
-
 export const Login = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);

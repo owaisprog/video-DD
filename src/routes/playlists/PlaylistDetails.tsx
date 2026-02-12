@@ -1,5 +1,5 @@
 // src/pages/playlists/PlaylistDetails.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import { ArrowLeft, Play, RefreshCcw, Trash2 } from "lucide-react";
@@ -16,14 +16,6 @@ type ApiResponse<T> = {
   data: T;
   message: any;
   success: boolean;
-};
-
-type Paginated<T> = {
-  docs?: T[];
-  totalDocs?: number;
-  limit?: number;
-  page?: number;
-  totalPages?: number;
 };
 
 type OwnerUser = {

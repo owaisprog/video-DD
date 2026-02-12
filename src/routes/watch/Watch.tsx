@@ -44,40 +44,6 @@ import { SuggestedVideos } from "./section/SuggestedVideos";
 import { CreatePlaylistModal } from "./components/CreatePlaylistModal";
 import { useAuth } from "../../context/auth-context";
 
-/* -------------------- Watch Later (local) -------------------- */
-const WATCH_LATER_KEY = "watchLater.v1";
-
-const safeParse = <T,>(raw: string | null, fallback: T): T => {
-  if (!raw) return fallback;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-};
-
-const readWatchLater = (): string[] => {
-  const raw = localStorage.getItem(WATCH_LATER_KEY);
-  const list = safeParse<string[]>(raw, []);
-  return Array.isArray(list) ? list.map(String) : [];
-};
-
-const writeWatchLater = (ids: string[]) => {
-  localStorage.setItem(WATCH_LATER_KEY, JSON.stringify(ids));
-};
-
-const isInWatchLater = (videoId: string) => readWatchLater().includes(videoId);
-
-const toggleWatchLater = (videoId: string) => {
-  const list = readWatchLater();
-  const exists = list.includes(videoId);
-  const next = exists
-    ? list.filter((id) => id !== videoId)
-    : [videoId, ...list];
-  writeWatchLater(next);
-  return !exists; // true => added
-};
-
 /* -------------------- Types -------------------- */
 type OwnerUser = {
   _id: string;
@@ -269,7 +235,7 @@ export const Watch = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
   // watch later local
-  const [watchLaterOn, setWatchLaterOn] = useState(false);
+  // const [watchLaterOn, setWatchLaterOn] = useState(false);
 
   // ✅ ensures we increment view only once per video
   const viewIncrementedForRef = useRef<string | null>(null);
@@ -436,7 +402,7 @@ export const Watch = () => {
   // ✅ sync watch later state
   useEffect(() => {
     if (!video?._id) return;
-    setWatchLaterOn(isInWatchLater(video._id));
+    // setWatchLaterOn(isInWatchLater(video._id));
   }, [video?._id]);
 
   // close share toolbar (existing)
@@ -653,12 +619,6 @@ export const Watch = () => {
     setMoreOpen((v) => !v);
     setShareOpen(false);
     setMoreMode("root");
-  };
-
-  const handleToggleWatchLater = () => {
-    if (!video?._id) return;
-    const added = toggleWatchLater(video._id);
-    setWatchLaterOn(added);
   };
 
   const isVideoInPlaylist = (pl: ApiPlaylist) => {

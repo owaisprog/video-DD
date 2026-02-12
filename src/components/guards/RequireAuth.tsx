@@ -1,7 +1,5 @@
-import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/auth-context";
-import TopRouteLoader from "../common/ui/TopRouteLoader";
 
 export const RequireAuth = () => {
   const { state } = useAuth();

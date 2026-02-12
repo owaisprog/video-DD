@@ -73,7 +73,7 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
 
   // ✅ single thumbnail + video preview
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  // const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   const thumbnailFiles = watch("thumbnail");
   const videoFiles = watch("video");
@@ -85,7 +85,7 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
   const handleClose = () => {
     reset();
     setThumbnailUrl(null);
-    setVideoUrl(null);
+    // setVideoUrl(null);
 
     // ✅ reset tags
     setTags([]);
@@ -106,11 +106,11 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
 
   useEffect(() => {
     if (!videoFile) {
-      setVideoUrl(null);
+      // setVideoUrl(null);
       return;
     }
     const url = URL.createObjectURL(videoFile);
-    setVideoUrl(url);
+    // setVideoUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [videoFile]);
 
