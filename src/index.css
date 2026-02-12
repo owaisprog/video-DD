@@ -1,0 +1,16 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+
+@theme {
+  --color-light-background: #ffffff;
+  --color-dark-background: #0f0f0f;
+  --color-light: #ffffff;
+  --color-dark: #0f0f0f;
+  --color-blue : #00abe8
+}
+
+
+button{
+  cursor: pointer;
+}
