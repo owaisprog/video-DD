@@ -113,7 +113,7 @@ const SkeletonGrid = ({ count = 6 }: { count?: number }) => (
 
 export const Home = () => {
   const [items, setItems] = useState<ApiVideo[]>([]);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(0);
   // const [totalPages, setTotalPages] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(true);
 
