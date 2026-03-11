@@ -1,8 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Menu,
-  Search,
-  Mic,
   Plus,
   Sun,
   Moon,
