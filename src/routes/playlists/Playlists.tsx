@@ -94,13 +94,13 @@ export function Playlists() {
   const [query, setQuery] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
 
-  // ✅ pagination state
+  //   pagination state
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const limit = 12;
   const hasMore = page < totalPages;
 
-  // ✅ infinite scroll sentinel + lock
+  //   infinite scroll sentinel + lock
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const lockRef = useRef(false);
 
@@ -166,7 +166,7 @@ export function Playlists() {
       setRows((prev) => {
         if (!append) return list;
 
-        // ✅ merge unique by _id
+        //   merge unique by _id
         const map = new Map<string, ApiPlaylist>();
         for (const x of prev) map.set(x._id, x);
         for (const x of list) map.set(x._id, x);
@@ -190,7 +190,7 @@ export function Playlists() {
     }
   };
 
-  // ✅ initial fetch + when user changes
+  //   initial fetch + when user changes
   useEffect(() => {
     setRows([]);
     setPage(1);
@@ -199,7 +199,7 @@ export function Playlists() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  // ✅ infinite scroll observer
+  //   infinite scroll observer
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
@@ -212,7 +212,7 @@ export function Playlists() {
         if (!hasMore) return;
         if (loading || loadingMore || refreshing) return;
         if (lockRef.current) return;
-        if (query.trim()) return; // ✅ optional: don’t auto-load while searching
+        if (query.trim()) return; //   optional: don’t auto-load while searching
 
         fetchPlaylistsPage(page + 1, { append: true, silent: true });
       },
@@ -444,7 +444,7 @@ export function Playlists() {
                 })}
               </div>
 
-              {/* ✅ Loading more skeletons */}
+              {/*   Loading more skeletons */}
               {loadingMore ? (
                 <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {Array.from({ length: 6 }).map((_, i) => (
@@ -453,7 +453,7 @@ export function Playlists() {
                 </div>
               ) : null}
 
-              {/* ✅ End message */}
+              {/*   End message */}
               {!loading &&
               !loadingMore &&
               !error &&
@@ -464,7 +464,7 @@ export function Playlists() {
                 </div>
               ) : null}
 
-              {/* ✅ Sentinel */}
+              {/*   Sentinel */}
               <div ref={sentinelRef} className="h-1 w-full" />
             </>
           )}

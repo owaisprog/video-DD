@@ -3,7 +3,7 @@ import { AccountHeader } from "../../components/common/account/AccountHeader";
 import { AccountTabs } from "../../components/common/account/AccountTabs";
 import { useParams } from "react-router-dom";
 
-import { getAllVideos } from "../../lib/api/video"; // ✅ use get-all-videos
+import { getAllVideos } from "../../lib/api/video"; //   use get-all-videos
 import { getUserChannel } from "../../lib/api/channel";
 
 import type {
@@ -32,7 +32,7 @@ export const Channel = () => {
   const isOwner =
     !!channelId && !!authedUserId && String(channelId) === String(authedUserId);
 
-  // ✅ viewing someone else => readOnly (no create/edit/delete)
+  //   viewing someone else => readOnly (no create/edit/delete)
   const readOnly = !!channelId && !isOwner;
 
   const [videosData, setVideosData] = useState<VideoDataType[]>([]);
@@ -44,7 +44,7 @@ export const Channel = () => {
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState<"asc" | "desc">("asc");
 
-  // ✅ refresh trigger (used after create/update/delete)
+  //   refresh trigger (used after create/update/delete)
   const [refreshTick, setRefreshTick] = useState(0);
   const refreshVideos = useCallback(() => {
     setRefreshTick((t) => t + 1);
@@ -72,7 +72,7 @@ export const Channel = () => {
 
   const requestIdRef = useRef(0);
 
-  // ✅ request guard for channel profile fetch
+  //   request guard for channel profile fetch
   const channelProfileRequestIdRef = useRef(0);
 
   const section = useMemo(() => {
@@ -92,7 +92,7 @@ export const Channel = () => {
             sortBy={sortBy}
             setSortBy={setSortBy}
             onDeletedRefresh={refreshVideos}
-            readOnly={readOnly} // ✅ NEW
+            readOnly={readOnly} //   NEW
           />
         );
       case "Playlists":
@@ -115,14 +115,14 @@ export const Channel = () => {
     readOnly,
   ]);
 
-  // ✅ keep existing behavior: show my own user instantly if I'm owner
+  //   keep existing behavior: show my own user instantly if I'm owner
   useEffect(() => {
     if (state.status !== "authed") return;
     if (isOwner) setUserData(state.user);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.status, isOwner]);
 
-  // ✅ fetch channel profile by channelId
+  //   fetch channel profile by channelId
   useEffect(() => {
     if (!channelId) return;
 
@@ -158,7 +158,7 @@ export const Channel = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channelId]);
 
-  // ✅ when channel changes, reset videos to avoid flashing previous channel content
+  //   when channel changes, reset videos to avoid flashing previous channel content
   useEffect(() => {
     setVideosData([]);
     setPage(1);
@@ -166,7 +166,7 @@ export const Channel = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channelId]);
 
-  // ✅ Fetch videos for THIS channel
+  //   Fetch videos for THIS channel
   useEffect(() => {
     if (activeTab !== "Create") return;
 
@@ -188,7 +188,7 @@ export const Channel = () => {
       }
 
       try {
-        // ✅ channel videos filter:
+        //   channel videos filter:
         // If channelId exists -> fetch that channel videos
         // Else fallback to authed user's videos (if any)
         const userIdToFetch = channelId ?? authedUserId;
@@ -198,7 +198,7 @@ export const Channel = () => {
           limit,
           query,
           sortBy, // order
-          sortType: "createdAt", // ✅ required by your backend sort object
+          sortType: "createdAt", //   required by your backend sort object
           userId: userIdToFetch,
         });
 

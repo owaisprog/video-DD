@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // ✅ add login method
+  //   add login method
   const login = async (payload: any) => {
     await loginApi(payload);
     await revalidate();

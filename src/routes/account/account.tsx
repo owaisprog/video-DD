@@ -9,11 +9,11 @@ import type {
 } from "../../components/common/account/types";
 import { useLoading } from "../../context/loading-context";
 import { getUser } from "../../context/auth-context";
-import { PlaylistsSection } from "../../components/common/account/PlaylistsSection";
+
 import { PostsSection } from "../../components/common/account/PostsSection";
 import { CreateSection } from "../../components/common/account/CreateSection";
 
-const tabs = ["Create", "Posts", "Playlists"];
+const tabs = ["Create", "Posts"];
 const LOADING_DELAY_MS = 150;
 
 export const Account = () => {
@@ -31,7 +31,7 @@ export const Account = () => {
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState<"asc" | "desc">("asc");
 
-  // ✅ refresh trigger (used after create/update/delete)
+  //   refresh trigger (used after create/update/delete)
   const [refreshTick, setRefreshTick] = useState(0);
   const refreshVideos = useCallback(() => {
     setRefreshTick((t) => t + 1);
@@ -78,8 +78,8 @@ export const Account = () => {
             onDeletedRefresh={refreshVideos}
           />
         );
-      case "Playlists":
-        return <PlaylistsSection />;
+      // case "Playlists":
+      //   return <PlaylistsSection />;
       case "Posts":
         return <PostsSection />;
       default:
@@ -101,7 +101,6 @@ export const Account = () => {
     if (state.status === "authed") {
       setUserData(state.user);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -110,7 +109,6 @@ export const Account = () => {
     const myRequestId = ++requestIdRef.current;
     let loadingTimer: ReturnType<typeof setTimeout> | null = null;
 
-    // ✅ KEY FIX:
     // If we already have data, DON’T flip to skeleton (prevents jerk).
     // If we have no data yet, show skeleton immediately.
     const hasDataAlready = videosData.length > 0;
@@ -152,7 +150,7 @@ export const Account = () => {
         if (loadingTimer) clearTimeout(loadingTimer);
 
         if (requestIdRef.current === myRequestId) {
-          // ✅ stop skeleton only if we were showing it
+          //   stop skeleton only if we were showing it
           if (!hasDataAlready) setVideosLoading(false);
         }
 
@@ -166,7 +164,7 @@ export const Account = () => {
       requestIdRef.current += 1;
       if (loadingTimer) clearTimeout(loadingTimer);
     };
-    // ✅ IMPORTANT: include videosData.length so the "hasDataAlready" is accurate for first fetch
+    //   IMPORTANT: include videosData.length so the "hasDataAlready" is accurate for first fetch
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, page, limit, query, sortBy, refreshTick, videosData.length]);
 

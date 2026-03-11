@@ -1,7 +1,32 @@
-// src/lib/api/video.ts
 import { api } from "./api";
 
-// publish video
+//   NEW: search videos
+export const searchVideos = ({
+  query,
+  page = 1,
+  limit = 12,
+}: {
+  query: string;
+  page?: number;
+  limit?: number;
+}) =>
+  api.post("/v1/video/search", {
+    query,
+    page,
+    limit,
+  });
+
+//   NEW: publish video in queue (multipart)
+export const publishVideoInQueue = (payload: FormData) =>
+  api.post("/v1/video/publish-Video-In-Queue", payload, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+//   NEW: get video processing progress
+export const getVideoProgress = (videoId: string) =>
+  api.get(`/v1/video/get-video-progress/${videoId}`);
+
+// (keep old publish if you still use it elsewhere)
 export const publishVideo = (payload: any) =>
   api.post("/v1/video/publish-video", payload);
 
@@ -24,14 +49,13 @@ export const getAllUserVideos = ({
   );
 
 // get all videos
-
 export type GetAllVideosParams = {
   page?: number;
   limit?: number;
   query?: string;
-  sortBy?: "asc" | "desc"; // order
-  sortType?: string; // field name, e.g. "createdAt"
-  userId?: string; // channel/user id to filter
+  sortBy?: "asc" | "desc";
+  sortType?: string;
+  userId?: string;
 };
 
 export const getAllVideos = (params?: GetAllVideosParams) =>

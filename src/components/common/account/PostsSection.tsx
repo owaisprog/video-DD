@@ -22,7 +22,7 @@ type Owner = {
 export type Post = {
   _id: string;
   content: string;
-  owner?: Owner | null; // ✅ owner is object now
+  owner?: Owner | null; //   owner is object now
   createdAt: string;
   updatedAt: string;
   likesCount: number;
@@ -104,7 +104,7 @@ export const PostsSection = () => {
     try {
       setLoadingPosts(true);
 
-      // ✅ FIX: getPosts supports options object OR string; using options is clearer
+      //   FIX: getPosts supports options object OR string; using options is clearer
       const response = await getPosts({
         userId: uid,
         page,

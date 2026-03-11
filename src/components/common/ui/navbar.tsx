@@ -18,6 +18,7 @@ import { useAuth } from "../../../context/auth-context";
 import toast from "react-hot-toast";
 import { extractMessageFromHtml } from "../../../utils/extractMessageFromHtml";
 import { logoutApi } from "../../../lib/api/auth";
+import { SearchBar } from "./search";
 
 export default function Navbar() {
   const { theme, toggle } = useTheme();
@@ -25,14 +26,15 @@ export default function Navbar() {
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const { state, revalidate } = useAuth();
   const navigate = useNavigate();
-
   const [loggingOut, setLoggingOut] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
 
-  const initials = useMemo(() => {
-    if (state.status !== "authed") return "O";
-    const u: any = state.user;
-    const name = u?.fullname || u?.username || u?.email || "User";
-    return String(name).trim().charAt(0).toUpperCase();
+  useEffect(() => {
+    if (state.status === "authed") {
+      setUserData(state.user);
+    } else {
+      setUserData(null);
+    }
   }, [state]);
 
   const showError = (err: any) => {
@@ -71,17 +73,17 @@ export default function Navbar() {
 
     setLoggingOut(true);
     try {
-      // ✅ 1) Call backend logout (clears cookies + refreshToken on server)
+      //   1) Call backend logout (clears cookies + refreshToken on server)
       await logoutApi();
 
-      // ✅ 2) Clear client tokens (if you store accessToken in storage)
+      //   2) Clear client tokens (if you store accessToken in storage)
       localStorage.removeItem("accessToken");
       sessionStorage.removeItem("accessToken");
 
-      // ✅ 3) Update auth state
+      //   3) Update auth state
       await revalidate();
 
-      // ✅ 4) Close dropdown + redirect
+      //   4) Close dropdown + redirect
       setOpen(false);
       navigate("/login", { replace: true });
     } catch (err: any) {
@@ -126,24 +128,7 @@ export default function Navbar() {
         </div>
 
         {/* Center */}
-        <div className="flex flex-1 justify-center">
-          <div className="flex w-full max-w-[720px] items-center gap-3">
-            <div className="flex h-10 flex-1 items-center rounded-full bg-[#f2f2f2] px-4 ring-1 ring-black/10 dark:bg-[#121212] dark:ring-white/10">
-              <span className="text-sm text-black/50 dark:text-white/50">
-                Search
-              </span>
-            </div>
-
-            <button className="grid h-10 w-10 place-items-center rounded-full bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/15">
-              <Search className="h-5 w-5" />
-            </button>
-
-            <button className="grid h-10 w-10 place-items-center rounded-full bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/15">
-              <Mic className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-
+        <SearchBar />
         {/* Right */}
         <div className="relative flex items-center gap-3" ref={dropdownRef}>
           <button className="inline-flex h-10 items-center gap-2 rounded-full bg-black/5 px-4 text-sm font-medium hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/15">
@@ -168,7 +153,15 @@ export default function Navbar() {
             onClick={() => setOpen((p) => !p)}
             className="grid h-8 w-8 place-items-center rounded-full bg-green-600 text-white font-medium cursor-pointer"
           >
-            {initials}
+            {(
+              <>
+                <img
+                  src={userData?.avatar}
+                  className="w-full h-full object-center object-cover rounded-full"
+                  alt=""
+                />{" "}
+              </>
+            ) || <User className="h-4 w-4" />}
           </button>
 
           {/* Dropdown */}
@@ -207,7 +200,7 @@ function ProfileDropdown({
 
   return (
     <div className="absolute z-20 right-0 top-14 w-72 rounded-xl bg-[#282828] text-white shadow-2xl ring-1 ring-black/30 overflow-hidden">
-      {/* ✅ Auth section */}
+      {/*   Auth section */}
       <div className="border-b border-white/10">
         {!authed ? (
           <Link to={"/login"}>

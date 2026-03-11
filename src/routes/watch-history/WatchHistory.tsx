@@ -1,4 +1,4 @@
-import  { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import {
@@ -34,7 +34,7 @@ type Video = {
   duration?: number;
   views?: string | number;
   tags?: string[];
-  owner?: Array<OwnerUser | string>; // your API returns ["userId"]
+  owner?: Array<OwnerUser | string>;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -59,10 +59,10 @@ type WatchHistoryPaginated = {
   nextPage: number | null;
 };
 
-type ApiResponse = {
+type ApiResponse<T> = {
   statusCode: number;
-  data: string; // "Watch history retrieved successfully."
-  message: WatchHistoryPaginated; // ✅ THIS is your real shape
+  data: T;
+  message: string;
   success: boolean;
 };
 
@@ -135,6 +135,41 @@ const SkeletonRow = () => (
   </div>
 );
 
+const normalizeWatchHistoryPayload = (
+  payload: any,
+  fallbackPage = 1,
+  fallbackLimit = LIMIT,
+): WatchHistoryPaginated => {
+  const source =
+    payload?.data &&
+    typeof payload.data === "object" &&
+    Array.isArray(payload.data.docs)
+      ? payload.data
+      : payload?.message &&
+          typeof payload.message === "object" &&
+          Array.isArray(payload.message.docs)
+        ? payload.message
+        : null;
+
+  return {
+    docs: Array.isArray(source?.docs) ? source.docs : [],
+    totalDocs: Number(source?.totalDocs ?? 0),
+    limit: Number(source?.limit ?? fallbackLimit),
+    page: Number(source?.page ?? fallbackPage),
+    totalPages: Number(source?.totalPages ?? 1),
+    hasPrevPage: Boolean(source?.hasPrevPage),
+    hasNextPage: Boolean(source?.hasNextPage),
+    prevPage:
+      source?.prevPage === null || source?.prevPage === undefined
+        ? null
+        : Number(source.prevPage),
+    nextPage:
+      source?.nextPage === null || source?.nextPage === undefined
+        ? null
+        : Number(source.nextPage),
+  };
+};
+
 export const WatchHistory = () => {
   const navigate = useNavigate();
 
@@ -154,14 +189,10 @@ export const WatchHistory = () => {
   );
   const [removing, setRemoving] = useState(false);
 
-  // pagination from API (message.*)
   const [page, setPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(false);
 
-  // prevents double fetch
   const lockRef = useRef(false);
-
-  // infinite scroll sentinel
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const showError = (err: any) => {
@@ -170,7 +201,11 @@ export const WatchHistory = () => {
     const serverMessage =
       typeof data === "string"
         ? extractMessageFromHtml(data)
-        : data?.message || data?.error || "";
+        : typeof data?.message === "string"
+          ? data.message
+          : typeof data?.error === "string"
+            ? data.error
+            : "";
 
     const status = err?.response?.status;
     const msg = (serverMessage || err?.message || "").toLowerCase();
@@ -209,43 +244,46 @@ export const WatchHistory = () => {
       if (!opts?.silent && !append) setLoading(true);
       if (append) setLoadingMore(true);
 
-      // ✅ IMPORTANT: getWatchHistory must support page+limit
-      // If your function signature differs, adjust here ONLY.
       const res = await getWatchHistory(targetPage, LIMIT);
+      const payload = res.data as ApiResponse<WatchHistoryPaginated> | any;
+      const paginated = normalizeWatchHistoryPayload(
+        payload,
+        targetPage,
+        LIMIT,
+      );
 
-      const payload = res.data as ApiResponse;
-      const paginated = payload?.message;
-
-      const docs = Array.isArray(paginated?.docs) ? paginated.docs : [];
-
-      // ✅ filter broken rows
+      const docs = Array.isArray(paginated.docs) ? paginated.docs : [];
       const safeDocs = docs.filter((x) => x?.video && x?.video?._id);
 
-      // ✅ keep order as API provides (already sorted by watch time usually)
-      // if you want newest first always:
       safeDocs.sort(
         (a, b) =>
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
       );
 
-      setPage(Number(paginated?.page ?? targetPage));
-      setHasNextPage(Boolean(paginated?.hasNextPage));
+      setPage(Number(paginated.page ?? targetPage));
+      setHasNextPage(Boolean(paginated.hasNextPage));
 
       setRows((prev) => {
         if (!append) return safeDocs;
 
-        // ✅ merge unique by historyRow _id (or by videoId if your history duplicates)
         const map = new Map<string, WatchHistoryRow>();
         for (const r of prev) map.set(r._id, r);
         for (const r of safeDocs) map.set(r._id, r);
-        return Array.from(map.values());
+
+        return Array.from(map.values()).sort(
+          (a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        );
       });
     } catch (e: any) {
       const data = e?.response?.data;
       const msg =
         typeof data === "string"
           ? extractMessageFromHtml(data)
-          : data?.message || e?.message || "Failed to load watch history.";
+          : typeof data?.message === "string"
+            ? data.message
+            : e?.message || "Failed to load watch history.";
+
       setError(String(msg));
       showError(e);
     } finally {
@@ -255,13 +293,11 @@ export const WatchHistory = () => {
     }
   };
 
-  // ✅ initial load
   useEffect(() => {
     fetchHistoryPage(1, { append: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ✅ infinite scroll observer
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
@@ -279,7 +315,7 @@ export const WatchHistory = () => {
       },
       {
         root: null,
-        rootMargin: "900px", // load before bottom
+        rootMargin: "900px",
         threshold: 0,
       },
     );
@@ -311,7 +347,6 @@ export const WatchHistory = () => {
     if (refreshing) return;
     setRefreshing(true);
 
-    // reset list and fetch page 1
     setRows([]);
     setPage(1);
     setHasNextPage(false);
@@ -321,6 +356,7 @@ export const WatchHistory = () => {
   };
 
   const openRemove = (row: WatchHistoryRow) => setRemoveTarget(row);
+
   const closeRemove = () => {
     if (removing) return;
     setRemoveTarget(null);
@@ -338,7 +374,6 @@ export const WatchHistory = () => {
     try {
       await removeFromWatchHistory(videoId);
       setRemoveTarget(null);
-      // keep pagination as-is; user can scroll to load more
     } catch (e: any) {
       setRows(prev);
       showError(e);
@@ -371,7 +406,6 @@ export const WatchHistory = () => {
       <Toaster position="bottom-right" toastOptions={{ duration: 4000 }} />
 
       <div className="mx-auto w-full px-4 py-6 md:px-6">
-        {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex items-start gap-3">
             <div className="grid h-11 w-11 place-items-center rounded-2xl bg-black/5 ring-1 ring-black/10 dark:bg-white/5 dark:ring-white/10">
@@ -388,7 +422,6 @@ export const WatchHistory = () => {
             </div>
           </div>
 
-          {/* Actions */}
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="button"
@@ -416,7 +449,6 @@ export const WatchHistory = () => {
           </div>
         </div>
 
-        {/* Search */}
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-md">
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-black/40 dark:text-white/40" />
@@ -439,7 +471,6 @@ export const WatchHistory = () => {
           </div>
         </div>
 
-        {/* Body */}
         <div className="mt-6">
           {loading ? (
             <div className="space-y-3">
@@ -487,9 +518,7 @@ export const WatchHistory = () => {
                       key={row._id}
                       className="group flex flex-col gap-4 rounded-2xl border border-black/10 bg-black/2 p-4 transition hover:bg-black/3 dark:border-white/10 dark:bg-white/3 dark:hover:bg-white/5 sm:flex-row sm:items-center sm:justify-between"
                     >
-                      {/* Left */}
                       <div className="flex min-w-0 gap-4">
-                        {/* Thumbnail */}
                         <button
                           type="button"
                           onClick={() => navigate(`/watch/${v._id}`)}
@@ -513,7 +542,6 @@ export const WatchHistory = () => {
                           </span>
                         </button>
 
-                        {/* Meta */}
                         <div className="min-w-0">
                           <button
                             type="button"
@@ -560,7 +588,6 @@ export const WatchHistory = () => {
                         </div>
                       </div>
 
-                      {/* Right actions */}
                       <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                         <button
                           type="button"
@@ -585,7 +612,6 @@ export const WatchHistory = () => {
                 })}
               </div>
 
-              {/* ✅ infinite loading indicator */}
               {loadingMore ? (
                 <div className="mt-4 space-y-3">
                   {Array.from({ length: 3 }).map((_, i) => (
@@ -594,21 +620,18 @@ export const WatchHistory = () => {
                 </div>
               ) : null}
 
-              {/* ✅ end indicator */}
               {!loading && !loadingMore && !error && !hasNextPage ? (
                 <div className="mt-6 rounded-2xl border border-black/10 bg-black/2 p-4 text-center text-sm text-black/60 dark:border-white/10 dark:bg-white/3 dark:text-white/60">
-                  You’ve reached the end.{" "}
+                  You’ve reached the end.
                 </div>
               ) : null}
 
-              {/* ✅ sentinel (must be after list) */}
               <div ref={sentinelRef} className="h-1 w-full" />
             </>
           )}
         </div>
       </div>
 
-      {/* Remove confirm modal */}
       {removeTarget ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-2xl bg-light-background text-black ring-1 ring-black/10 dark:bg-dark-background dark:text-white dark:ring-white/10">
@@ -656,7 +679,6 @@ export const WatchHistory = () => {
         </div>
       ) : null}
 
-      {/* Clear confirm modal */}
       {clearOpen ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-2xl bg-light-background text-black ring-1 ring-black/10 dark:bg-dark-background dark:text-white dark:ring-white/10">

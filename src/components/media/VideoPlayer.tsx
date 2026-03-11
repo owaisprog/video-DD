@@ -15,7 +15,7 @@ type Props = {
 
 export function VideoPlayer({ src, title = "Video" }: Props) {
   const playerSrc =
-    typeof src === "string" ? src : ({ src, type: "video/object" } as const); // ✅ literal type, not string
+    typeof src === "string" ? src : ({ src, type: "video/object" } as const); //   literal type, not string
 
   return (
     <MediaPlayer

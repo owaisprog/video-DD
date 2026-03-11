@@ -8,6 +8,8 @@ export const RouteMap: RouteObject[] = [
     element: <MainLayout />,
     children: [
       { index: true, lazy: () => import("../../routes/home") },
+      { path: "/results", lazy: () => import("../../routes/search") },
+
       {
         element: <RequireAuth />,
         children: [
@@ -23,7 +25,7 @@ export const RouteMap: RouteObject[] = [
             lazy: () => import("../../routes/playlists"), // must export Component (PlaylistsLayout)
             children: [
               {
-                index: true, // ✅ THIS is what makes /playlists show something
+                index: true, //   THIS is what makes /playlists show something
                 lazy: () => import("../../routes/playlists/Playlists"), // must export Component
               },
               {

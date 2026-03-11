@@ -24,7 +24,7 @@ type ModalProps = {
   data: VideoDataType;
   open: boolean;
   onClose: () => void;
-  // ✅ new: refresh parent list after save
+  //   new: refresh parent list after save
   onUpdatedRefresh?: () => void;
 };
 
@@ -69,7 +69,7 @@ export const EditVideo = ({
     mode: "onTouched",
   });
 
-  // ✅ tags
+  //   tags
   const initialTags = useMemo<string[]>(
     () =>
       Array.isArray((data as any).tags) ? ((data as any).tags as string[]) : [],
@@ -135,7 +135,7 @@ export const EditVideo = ({
     setVideoUrl(existingVideoUrl || null);
     resetField("video");
 
-    // ✅ reset tags from data
+    //   reset tags from data
     setTags(initialTags);
     setTagInput("");
   }, [open, data, existingVideoUrl, reset, resetField, initialTags]);
@@ -180,7 +180,7 @@ export const EditVideo = ({
     setThumbnailUrl(data.thumbnail || null);
     setVideoUrl(existingVideoUrl || null);
 
-    // ✅ reset tags
+    //   reset tags
     setTags(initialTags);
     setTagInput("");
 
@@ -224,7 +224,7 @@ export const EditVideo = ({
           title: formValues.title,
           description: formValues.description,
           isPublished: formValues.isPublished,
-          tags, // ✅ send tags
+          tags, //   send tags
         };
 
         requests.push(updateVideoData({ videoId, data: payload }));
@@ -244,7 +244,7 @@ export const EditVideo = ({
 
       setTimeout(() => {
         handleClose();
-        // ✅ refresh parent list
+        //   refresh parent list
         onUpdatedRefresh?.();
       }, 300);
     } catch (err: any) {
@@ -553,7 +553,7 @@ export const EditVideo = ({
                   </p>
                 </div>
 
-                {/* ✅ Tags */}
+                {/*   Tags */}
                 <div className="rounded-2xl border border-black/10 bg-black/3 p-5 dark:border-white/10 dark:bg-white/5">
                   <label className="flex items-center gap-2 text-sm font-medium">
                     <Tag className="h-4 w-4 text-black/70 dark:text-white/70" />

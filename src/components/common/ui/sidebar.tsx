@@ -95,7 +95,7 @@ export default function Sidebar() {
   };
 
   /**
-   * ✅ Normalize backend response for subscribed channels
+   *   Normalize backend response for subscribed channels
    * Expected (from fixed backend):
    * [
    *   { _id, subscriber, channel: { _id, username, fullname, avatar }, createdAt... }
@@ -256,7 +256,7 @@ export default function Sidebar() {
 
         <Divider />
 
-        {/* ✅ Subscriptions */}
+        {/*   Subscriptions */}
         <SectionHeader title="Subscriptions" />
         {subscriptionsSection}
 
@@ -411,5 +411,3 @@ function PlaylistsIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-
- 

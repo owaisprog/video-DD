@@ -24,7 +24,7 @@ type ApiVideo = {
   duration: number;
   views: string;
   isPublished: boolean;
-  owner: OwnerUser[]; // ✅ matches your response
+  owner: OwnerUser[]; //   matches your response
   createdAt: string;
   updatedAt: string;
   likesCount: number;
@@ -156,7 +156,7 @@ export const Home = () => {
       setItems((prev) => {
         if (!append) return docs;
 
-        // ✅ merge unique by _id (prevents duplicates)
+        //   merge unique by _id (prevents duplicates)
         const map = new Map<string, ApiVideo>();
         for (const v of prev) map.set(v._id, v);
         for (const v of docs) map.set(v._id, v);
@@ -171,13 +171,13 @@ export const Home = () => {
     }
   };
 
-  // ✅ initial load
+  //   initial load
   useEffect(() => {
     fetchPage(1, { append: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ✅ infinite scroll observer
+  //   infinite scroll observer
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
@@ -223,6 +223,7 @@ export const Home = () => {
           duration: secondsToDuration(v.duration),
           thumbnailUrl: isHttpUrl(v.thumbnail) ? v.thumbnail : FALLBACK_THUMB,
           verified: false,
+          ownerId: owner0._id,
         };
       });
   }, [items]);
@@ -237,21 +238,21 @@ export const Home = () => {
         <>
           <VideosSection videos={videos} heading="All videos" />
 
-          {/* ✅ Load more skeleton */}
+          {/*   Load more skeleton */}
           {loadingMore ? (
             <div className="mt-8">
               <SkeletonGrid count={3} />
             </div>
           ) : null}
 
-          {/* ✅ End message */}
+          {/*   End message */}
           {!loadingFirst && !loadingMore && !hasNextPage ? (
             <div className="mt-8 rounded-2xl border border-black/10 bg-black/2 p-4 text-center text-sm text-black/60 dark:border-white/10 dark:bg-white/3 dark:text-white/60">
               You’ve reached the end.{" "}
             </div>
           ) : null}
 
-          {/* ✅ sentinel (must be last) */}
+          {/*   sentinel (must be last) */}
           <div ref={sentinelRef} className="h-1 w-full" />
         </>
       )}

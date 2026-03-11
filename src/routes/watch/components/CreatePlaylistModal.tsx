@@ -97,7 +97,7 @@ export function CreatePlaylistModal({
 
       toast.success("Playlist created", { position: "bottom-right" });
       onCreated(created);
-      onClose(); // ✅ close modal after creation
+      onClose(); //   close modal after creation
     } catch (err: any) {
       const handled = showAuthError(err);
       if (!handled) {

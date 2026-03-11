@@ -50,6 +50,8 @@ type OwnerUser = {
   username: string;
   fullname: string;
   avatar?: string;
+  email?: string;
+  coverimage?: string;
 };
 
 type ApiVideo = {
@@ -59,15 +61,17 @@ type ApiVideo = {
   title: string;
   description: string;
   duration: number;
-  views: string;
+  views: number;
   isPublished: boolean;
-  owner: OwnerUser[];
+  owner: OwnerUser;
   createdAt: string;
   updatedAt: string;
   likesCount: number;
-  commentCounts: number;
+  commentsCount: number;
+  tags?: string[];
 
   isLiked?: boolean;
+  likedBy?: boolean; //   actual field returned by API
   isSubscribed?: boolean;
 };
 
@@ -82,7 +86,7 @@ type ApiPlaylist = {
   _id: string;
   name: string;
   description?: string;
-  videos?: any[]; // can be ids or docs depending on your backend
+  videos?: any[];
   createdAt?: string;
   updatedAt?: string;
 };
@@ -114,7 +118,7 @@ const timeAgo = (iso: string) => {
   return "just now";
 };
 
-const viewsText = (views: string) => {
+const viewsText = (views: number | string) => {
   const n = Number(views || 0);
   if (!Number.isFinite(n)) return "0 views";
   if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B views`;
@@ -130,17 +134,20 @@ const formatDate = (iso: string) =>
     day: "2-digit",
   });
 
+//   CHANGE 1: Added `activeInvert` prop for the like button's special active styling
 const ButtonPill = ({
   icon,
   label,
   onClick,
   active = false,
+  activeInvert = false,
   disabled = false,
 }: {
   icon: React.ReactNode;
   label: string;
   onClick?: () => void;
   active?: boolean;
+  activeInvert?: boolean;
   disabled?: boolean;
 }) => (
   <button
@@ -149,12 +156,13 @@ const ButtonPill = ({
     disabled={disabled}
     className={[
       "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition",
-      "bg-black/5 text-black/80 hover:bg-black/10",
-      "dark:bg-white/5 dark:text-white/85 dark:hover:bg-white/10",
+      //   When activeInvert: dark theme → white bg + black text; light theme → black bg + white text
+      active && activeInvert
+        ? "bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/85"
+        : active
+          ? "ring-2 ring-black/25 dark:ring-white/25 bg-black/10 dark:bg-white/10 text-black/80 dark:text-white/85"
+          : "bg-black/5 text-black/80 hover:bg-black/10 dark:bg-white/5 dark:text-white/85 dark:hover:bg-white/10",
       disabled ? "opacity-60 cursor-not-allowed" : "",
-      active
-        ? "ring-2 ring-black/25 dark:ring-white/25 bg-black/10 dark:bg-white/10"
-        : "",
     ].join(" ")}
   >
     {icon}
@@ -182,7 +190,6 @@ const getIdsFromPlaylistVideos = (videos: any[] | undefined): string[] => {
 };
 
 const extractPlaylists = (payload: any): ApiPlaylist[] => {
-  // your API should be { data: { docs: [...] } }
   const base = payload?.data ?? payload?.message ?? payload;
   const docs =
     base?.docs ||
@@ -222,7 +229,7 @@ export const Watch = () => {
   const [shareOpen, setShareOpen] = useState(false);
   const shareWrapRef = useRef<HTMLDivElement | null>(null);
 
-  // ✅ More menu
+  // More menu
   const [moreOpen, setMoreOpen] = useState(false);
   const [moreMode, setMoreMode] = useState<"root" | "playlist">("root");
   const moreWrapRef = useRef<HTMLDivElement | null>(null);
@@ -234,29 +241,24 @@ export const Watch = () => {
   // create modal
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
-  // watch later local
-  // const [watchLaterOn, setWatchLaterOn] = useState(false);
-
-  // ✅ ensures we increment view only once per video
+  // ensures we increment view only once per video
   const viewIncrementedForRef = useRef<string | null>(null);
 
-  // ✅ ensures we add watch history only once per video
+  // ensures we add watch history only once per video
   const watchHistoryAddedForRef = useRef<string | null>(null);
 
-  /* -------------------- ✅ Suggested Videos Infinite Scroll -------------------- */
+  /* -------------------- Suggested Videos Infinite Scroll -------------------- */
   const SUGGEST_BATCH = 12;
-  const SUGGEST_MAX = 120; // safety cap (prevents endless requests if backend has no "total")
+  const SUGGEST_MAX = 120;
   const [suggestLimit, setSuggestLimit] = useState(SUGGEST_BATCH);
   const [suggestBumping, setSuggestBumping] = useState(false);
   const suggestedSentinelRef = useRef<HTMLDivElement | null>(null);
   const suggestLockRef = useRef(false);
 
-  // reset suggested limit when the route changes
   useEffect(() => {
     setSuggestLimit(SUGGEST_BATCH);
   }, [videoId]);
 
-  // IntersectionObserver that increases limit when user scrolls near bottom of sidebar
   useEffect(() => {
     const el = suggestedSentinelRef.current;
     if (!el) return;
@@ -267,8 +269,6 @@ export const Watch = () => {
         const entry = entries[0];
         if (!entry?.isIntersecting) return;
         if (suggestLockRef.current) return;
-
-        // if we already reached max, stop
         if (suggestLimit >= SUGGEST_MAX) return;
 
         suggestLockRef.current = true;
@@ -276,7 +276,6 @@ export const Watch = () => {
 
         setSuggestLimit((prev) => Math.min(SUGGEST_MAX, prev + SUGGEST_BATCH));
 
-        // small cooldown so observer doesn't fire multiple bumps instantly
         window.setTimeout(() => {
           suggestLockRef.current = false;
           setSuggestBumping(false);
@@ -284,7 +283,7 @@ export const Watch = () => {
       },
       {
         root: null,
-        rootMargin: "900px", // load earlier before hitting bottom
+        rootMargin: "900px",
         threshold: 0,
       },
     );
@@ -345,7 +344,7 @@ export const Watch = () => {
     );
   };
 
-  // ✅ fetch video (existing behavior)
+  // fetch video
   useEffect(() => {
     if (!videoId) return;
 
@@ -354,32 +353,38 @@ export const Watch = () => {
         setLoading(true);
 
         const res = await getVideoById(videoId);
-        const payload = res.data as ApiResponse<ApiVideo[]>;
+        const payload = res.data as ApiResponse<ApiVideo>;
 
-        const first = payload.data?.[0] ?? null;
-        setVideo(first);
+        const fetchedVideo = payload?.data ?? null;
+        setVideo(fetchedVideo);
 
-        setLikesCount(first?.likesCount ?? 0);
-        setLiked(Boolean(first?.isLiked ?? false));
-        setSubscribed(Boolean(first?.isSubscribed ?? false));
+        setLikesCount(fetchedVideo?.likesCount ?? 0);
+        //   CHANGE 2: Read `likedBy` (actual API field) with fallback to `isLiked`
+        setLiked(
+          Boolean(fetchedVideo?.likedBy ?? fetchedVideo?.isLiked ?? false),
+        );
+        setSubscribed(Boolean(fetchedVideo?.isSubscribed ?? false));
 
-        // ✅ Increment view once
-        if (first?._id && viewIncrementedForRef.current !== first._id) {
-          viewIncrementedForRef.current = first._id;
+        if (
+          fetchedVideo?._id &&
+          viewIncrementedForRef.current !== fetchedVideo._id
+        ) {
+          viewIncrementedForRef.current = fetchedVideo._id;
 
-          incrementVideoView(first._id)
+          incrementVideoView(fetchedVideo._id)
             .then(() => {
               setVideo((prev) => {
                 if (!prev) return prev;
                 const n = Number(prev.views || 0);
                 if (!Number.isFinite(n)) return prev;
-                return { ...prev, views: String(n + 1) };
+                return { ...prev, views: n + 1 };
               });
             })
             .catch(() => {});
         }
       } catch (err: any) {
         showError(err);
+        setVideo(null);
       } finally {
         setLoading(false);
       }
@@ -388,7 +393,7 @@ export const Watch = () => {
     fetchVideo();
   }, [videoId]);
 
-  // ✅ Watch history API (fire-and-forget)
+  // Watch history API (fire-and-forget)
   useEffect(() => {
     const id = video?._id;
     if (!id) return;
@@ -399,13 +404,7 @@ export const Watch = () => {
     addToWatchHistory(id).catch(() => {});
   }, [video?._id]);
 
-  // ✅ sync watch later state
-  useEffect(() => {
-    if (!video?._id) return;
-    // setWatchLaterOn(isInWatchLater(video._id));
-  }, [video?._id]);
-
-  // close share toolbar (existing)
+  // close share toolbar
   useEffect(() => {
     if (!shareOpen) return;
 
@@ -426,12 +425,12 @@ export const Watch = () => {
     };
   }, [shareOpen]);
 
-  // ✅ close more menu (but do NOT close if modal open)
+  // close more menu
   useEffect(() => {
     if (!moreOpen) return;
 
     const onDown = (e: MouseEvent) => {
-      if (createModalOpen) return; // ✅ important
+      if (createModalOpen) return;
       if (!moreWrapRef.current) return;
       if (!moreWrapRef.current.contains(e.target as Node)) {
         setMoreOpen(false);
@@ -442,7 +441,7 @@ export const Watch = () => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       if (createModalOpen) {
-        setCreateModalOpen(false); // ✅ close modal only
+        setCreateModalOpen(false);
         return;
       }
       setMoreOpen(false);
@@ -457,7 +456,7 @@ export const Watch = () => {
     };
   }, [moreOpen, createModalOpen]);
 
-  const owner = useMemo(() => video?.owner?.[0], [video]);
+  const owner = useMemo(() => video?.owner, [video]);
   const channelId = owner?._id;
 
   const handleToggleLike = async () => {
@@ -587,7 +586,6 @@ export const Watch = () => {
     const ids = getIdsFromPlaylistVideos(pl.videos);
     const already = ids.includes(String(vid));
 
-    // optimistic update
     const prev = playlists;
     setPlaylists((p) =>
       p.map((x) => {
@@ -608,7 +606,7 @@ export const Watch = () => {
         await addVideoToPlaylist(pl._id, vid);
       }
     } catch (err: any) {
-      setPlaylists(prev); // revert
+      setPlaylists(prev);
       showError(err);
     }
   };
@@ -648,7 +646,11 @@ export const Watch = () => {
               <>
                 {/* Player */}
                 <div className="overflow-hidden rounded-2xl ring-1 ring-black/10 dark:ring-white/10">
-                  <VideoPlayer src={video.videoFile} title={video.title} />
+                  <VideoPlayer
+                    key={video._id}
+                    src={video.videoFile}
+                    title={video.title}
+                  />
                 </div>
 
                 {/* Title */}
@@ -709,6 +711,7 @@ export const Watch = () => {
 
                   {/* Actions */}
                   <div className="flex flex-wrap items-center gap-2">
+                    {/*   CHANGE 3: Pass activeInvert to the like ButtonPill */}
                     <ButtonPill
                       icon={
                         <ThumbsUp
@@ -720,12 +723,13 @@ export const Watch = () => {
                       label={`${likesCount}`}
                       onClick={handleToggleLike}
                       active={liked}
+                      activeInvert={true}
                       disabled={liking}
                     />
 
                     <ButtonPill
                       icon={<MessageCircle className="h-4 w-4" />}
-                      label={`${video.commentCounts ?? 0}`}
+                      label={`${video.commentsCount ?? 0}`}
                     />
 
                     {/* Share */}
@@ -826,7 +830,7 @@ export const Watch = () => {
                       )}
                     </div>
 
-                    {/* ✅ More (3 dots) */}
+                    {/* More */}
                     <div ref={moreWrapRef} className="relative">
                       <button
                         type="button"
@@ -902,7 +906,6 @@ export const Watch = () => {
                             </div>
                           ) : (
                             <div className="p-2">
-                              {/* Top row actions */}
                               <div className="mb-2 flex items-center justify-between px-2">
                                 <button
                                   type="button"
@@ -929,7 +932,6 @@ export const Watch = () => {
                                 </button>
                               </div>
 
-                              {/* Playlists list */}
                               {plLoading ? (
                                 <div className="px-3 py-6 text-sm text-black/60 dark:text-white/60">
                                   Loading playlists...
@@ -1027,20 +1029,17 @@ export const Watch = () => {
               <>
                 <SuggestedVideos videoId={video._id} limit={suggestLimit} />
 
-                {/* ✅ sentinel for infinite scroll */}
                 <div ref={suggestedSentinelRef} className="h-1 w-full" />
 
-                {/* ✅ tiny hint while we bump limit */}
                 {suggestBumping ? (
                   <div className="mt-3 rounded-2xl border border-black/10 bg-black/2 p-3 text-center text-xs text-black/60 dark:border-white/10 dark:bg-white/3 dark:text-white/60">
                     Loading more suggestions…
                   </div>
                 ) : null}
 
-                {/* optional end hint */}
                 {suggestLimit >= SUGGEST_MAX ? (
                   <div className="mt-3 rounded-2xl border border-black/10 bg-black/2 p-3 text-center text-xs text-black/55 dark:border-white/10 dark:bg-white/3 dark:text-white/55">
-                    You’ve reached the maximum suggestions loaded.
+                    You've reached the maximum suggestions loaded.
                   </div>
                 ) : null}
               </>
@@ -1065,12 +1064,10 @@ export const Watch = () => {
         </div>
       </div>
 
-      {/* ✅ Create Playlist Modal */}
       <CreatePlaylistModal
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
         onCreated={() => {
-          // ✅ modal closes, keep user on playlist list so they can select
           fetchPlaylists();
           setMoreOpen(true);
           setMoreMode("playlist");

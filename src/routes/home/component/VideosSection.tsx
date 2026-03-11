@@ -11,6 +11,7 @@ export type VideoCard = {
   duration: string;
   thumbnailUrl: string;
   verified?: boolean;
+  ownerId?: string;
 };
 
 const Avatar = ({
@@ -43,6 +44,7 @@ export const VideosSection = ({
   videos: VideoCard[];
   heading?: string;
 }) => {
+  const videoChannelId = videos[0]?.ownerId;
   return (
     <section className="w-full bg-light-background text-black dark:bg-dark-background dark:text-white">
       <div className="mb-5 flex items-center justify-between">
@@ -71,10 +73,12 @@ export const VideosSection = ({
               </div>
 
               <div className="mt-4 flex items-start gap-3">
-                <Avatar
-                  channelName={v.channelName}
-                  channelAvatarUrl={v.channelAvatarUrl}
-                />
+                <Link to={`/channel/${videoChannelId}`}>
+                  <Avatar
+                    channelName={v.channelName}
+                    channelAvatarUrl={v.channelAvatarUrl}
+                  />
+                </Link>
 
                 <div className="min-w-0 flex-1">
                   <h3 className="line-clamp-2 text-base font-semibold leading-snug text-black/90 dark:text-white/90">
@@ -82,7 +86,11 @@ export const VideosSection = ({
                   </h3>
 
                   <div className="mt-1 flex items-center gap-1 text-sm text-black/60 dark:text-white/60">
-                    <span className="truncate">{v.channelName}</span>
+                    <Link to={`/channel/${videoChannelId}`}>
+                      <span className="truncate hover:underline">
+                        {v.channelName}
+                      </span>
+                    </Link>
                     {v.verified && (
                       <span className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-black/10 text-[10px] font-bold text-black/70 dark:bg-white/10 dark:text-white/70">
                         ✓

@@ -10,7 +10,7 @@ import {
   Tag,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { publishVideo } from "../../../lib/api/video";
+import { publishVideoInQueue } from "../../../lib/api/video"; //   changed
 import toast, { Toaster } from "react-hot-toast";
 import { extractMessageFromHtml } from "../../../utils/extractMessageFromHtml";
 import { VideoPlayer } from "../../../components/media/VideoPlayer";
@@ -18,8 +18,9 @@ import { VideoPlayer } from "../../../components/media/VideoPlayer";
 type ModalProps = {
   open: boolean;
   onClose: () => void;
-  // ✅ new: refresh parent list after success
-  onSuccess?: () => void;
+
+  //   now returns queued videoId
+  onSuccess?: (videoId: string) => void;
 };
 
 type FormType = {
@@ -43,14 +44,12 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
     mode: "onTouched",
   });
 
-  // ✅ tags
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
 
   const normalizeTag = (t: string) => t.trim().replace(/^#+/, "");
   const addTagsFromRaw = (raw: string) => {
     const parts = raw.split(",").map(normalizeTag).filter(Boolean);
-
     if (parts.length === 0) return;
 
     setTags((prev) => {
@@ -71,9 +70,7 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
   const removeTag = (t: string) =>
     setTags((prev) => prev.filter((x) => x !== t));
 
-  // ✅ single thumbnail + video preview
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
-  // const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   const thumbnailFiles = watch("thumbnail");
   const videoFiles = watch("video");
@@ -81,16 +78,11 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
   const thumbnailFile = useMemo(() => thumbnailFiles?.[0], [thumbnailFiles]);
   const videoFile = useMemo(() => videoFiles?.[0], [videoFiles]);
 
-  // cleanup when closing modal
   const handleClose = () => {
     reset();
     setThumbnailUrl(null);
-    // setVideoUrl(null);
-
-    // ✅ reset tags
     setTags([]);
     setTagInput("");
-
     onClose();
   };
 
@@ -105,12 +97,8 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
   }, [thumbnailFile]);
 
   useEffect(() => {
-    if (!videoFile) {
-      // setVideoUrl(null);
-      return;
-    }
+    if (!videoFile) return;
     const url = URL.createObjectURL(videoFile);
-    // setVideoUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [videoFile]);
 
@@ -123,21 +111,29 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
       formData.append("thumbnail", data.thumbnail[0]);
       formData.append("isPublished", data.isPublished ? "true" : "false");
 
-      // ✅ append tags (multiple values -> backend receives array)
       tags.forEach((t) => formData.append("tags", t));
 
-      const response = await publishVideo(formData);
+      const response = await publishVideoInQueue(formData);
 
-      if (response.status === 201) {
-        toast.success("Video Published Successfully", {
+      const videoId =
+        response?.data?.data?.videoId ||
+        response?.data?.videoId ||
+        response?.data?.data?._id;
+
+      if (response.status === 202 && videoId) {
+        toast.success("Video queued for processing", {
           position: "bottom-right",
         });
 
+        // close modal first
         setTimeout(() => {
           handleClose();
-          // ✅ refresh parent list
-          onSuccess?.();
+          onSuccess?.(String(videoId)); //   pass queued id to parent
         }, 300);
+      } else {
+        toast.error("Failed to queue video. Please try again.", {
+          position: "bottom-right",
+        });
       }
     } catch (err: any) {
       const html = err?.response?.data;
@@ -158,7 +154,6 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8">
       <Toaster position="bottom-right" toastOptions={{ duration: 4000 }} />
 
-      {/* Backdrop */}
       <button
         aria-label="Close modal"
         onClick={handleClose}
@@ -166,9 +161,7 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
         disabled={isSubmitting}
       />
 
-      {/* Panel */}
       <div className="relative flex h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-light-background text-black shadow-2xl ring-1 ring-black/10 dark:bg-dark-background dark:text-white dark:ring-white/10">
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-black/10 px-6 py-4 dark:border-white/10">
           <div>
             <h3 className="text-lg font-semibold">Upload videos</h3>
@@ -188,14 +181,12 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
           </button>
         </div>
 
-        {/* ✅ Make the whole modal a single form so submit shows required errors */}
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-1 flex-col overflow-hidden"
         >
-          {/* Content */}
           <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 md:flex-row">
-            {/* Left: Upload area */}
+            {/* Left */}
             <div className="w-full md:w-[44%]">
               <div
                 className={[
@@ -218,7 +209,6 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
                     Your videos will be private until you publish them.
                   </p>
 
-                  {/* ✅ Register video */}
                   <label
                     className={[
                       "mt-6 inline-flex cursor-pointer items-center gap-2 rounded-full border border-black/10 bg-light px-6 py-2 text-sm font-semibold text-black shadow-sm hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/15 dark:focus-visible:ring-white/40",
@@ -240,7 +230,6 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
                     />
                   </label>
 
-                  {/* ✅ Video required error */}
                   {errors.video?.message && (
                     <p className="mt-2 text-xs font-medium text-red-600">
                       {errors.video.message}
@@ -269,7 +258,7 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
                 </div>
               </div>
 
-              {/* ✅ Thumbnail picker (SINGLE) */}
+              {/* Thumbnail */}
               <div
                 className={[
                   "mt-4 rounded-2xl border bg-black/3 p-5 dark:bg-white/5",
@@ -285,7 +274,6 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {/* Select image */}
                     <label
                       className={[
                         "cursor-pointer rounded-full border border-black/10 bg-light px-4 py-1.5 text-xs font-semibold text-black hover:bg-black/5 dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/15",
@@ -307,7 +295,6 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
                       />
                     </label>
 
-                    {/* Remove (only when selected) */}
                     {thumbnailUrl && (
                       <button
                         type="button"
@@ -325,7 +312,6 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
                   </div>
                 </div>
 
-                {/* Single preview */}
                 <div className="mt-3 overflow-hidden rounded-xl border border-black/10 bg-black/5 dark:border-white/10 dark:bg-black/25">
                   <div className="relative aspect-video w-full">
                     {thumbnailUrl ? (
@@ -347,7 +333,6 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
                   </div>
                 </div>
 
-                {/* ✅ Thumbnail required error */}
                 {errors.thumbnail?.message && (
                   <p className="mt-2 text-xs font-medium text-red-600">
                     {errors.thumbnail.message}
@@ -356,7 +341,7 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
               </div>
             </div>
 
-            {/* Right: Form fields */}
+            {/* Right */}
             <div className="w-full md:w-[56%]">
               <div className="space-y-5">
                 {/* Title */}
@@ -427,7 +412,7 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
                   </p>
                 </div>
 
-                {/* ✅ Tags */}
+                {/* Tags */}
                 <div className="rounded-2xl border border-black/10 bg-black/3 p-5 dark:border-white/10 dark:bg-white/5">
                   <label className="flex items-center gap-2 text-sm font-medium">
                     <Tag className="h-4 w-4 text-black/70 dark:text-white/70" />
@@ -437,7 +422,6 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
                     </span>
                   </label>
 
-                  {/* Chips */}
                   {tags.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
                       {tags.map((t) => (
@@ -460,7 +444,6 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
                     </div>
                   )}
 
-                  {/* Input */}
                   <input
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
@@ -518,7 +501,7 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
             </div>
           </div>
 
-          {/* Footer actions */}
+          {/* Footer */}
           <div className="border-t border-black/10 px-6 py-4 dark:border-white/10">
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-center text-xs leading-relaxed text-black/60 sm:text-left dark:text-white/60">
@@ -547,17 +530,6 @@ export const CreateVideo = ({ open, onClose, onSuccess }: ModalProps) => {
                   className="rounded-full px-5 py-2 text-sm font-medium text-black/80 hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60 dark:text-white/80 dark:hover:bg-white/10"
                 >
                   Cancel
-                </button>
-
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  className="rounded-full border border-black/10 bg-light px-5 py-2 text-sm font-semibold text-black hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
-                  onClick={() => {
-                    // draft logic if you want (no validation here)
-                  }}
-                >
-                  Save draft
                 </button>
 
                 <button
