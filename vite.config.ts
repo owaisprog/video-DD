@@ -11,7 +11,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "https://video-dd-backend.vercel.app",
+        target: "https://video-dd-backend.onrender.com",
         changeOrigin: true,
         secure: false,
       },
